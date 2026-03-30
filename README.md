@@ -33,8 +33,8 @@ Hazard Scenarios (HS)
 | HS4 | Veg. Recovery | Yes | Terraced slopes with dense vegetation recovery. |
 📄 License & Contact
  * License: GNU Affero General Public License v3.0 (AGPL-3.0).
- * Developer: Costantino Pala (Geoscientist and PhD Student at University of Cagliari).
- * Contact: costantino.pala@unica.it.
+ * Developer: Costantino Pala (Geoscientist, PhD)
+ * Contact: costantino.pala.geo@proton.me
 📚 Selected Bibliography
  * Borselli et al. (2008) - Prolegomena to sediment and flow connectivity in the landscape.
  * Cavalli et al. (2008) - The effectiveness of airborne LiDAR data in the recognition of channel-bed morphology.
