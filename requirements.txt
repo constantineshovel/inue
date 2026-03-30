@@ -1,0 +1,15 @@
+customtkinter==5.2.2
+dask==2025.2.0
+dask_image==2024.5.3
+geopandas==1.0.1
+matplotlib==3.10.1
+numpy==2.2.3
+opencv_python==4.11.0.86
+Pillow==11.1.0
+psutil==7.0.0
+rasterio==1.4.3
+Requests==2.32.3
+rioxarray==0.18.2
+scipy==1.15.2
+Shapely==2.0.7
+xarray==2025.1.2
