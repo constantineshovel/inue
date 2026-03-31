@@ -52,15 +52,28 @@ Hazard Scenarios (HS)
  * Contact: costantino.pala.geo@proton.me
  * 
 📚 Bibliography
- * Borselli, L., Cassi, P., & Torri, D. (2008). Prolegomena to sediment and flow connectivity in the landscape. Catena, 75(3), 268–277.\n
-*Cavalli, M., Tarolli, P., Marchi, L., & Dalla Fontana, G. (2008). The effectiveness of airborne LiDAR data in the recognition of channel-bed morphology. CATENA, 73(3), 249–260. https://doi.org/10.1016/j.catena.2007.11.001\n
-*Cavalli, M., Trevisani, S., Comiti, F., & Marchi, L. (2013). Geomorphometric assessment of spatial sediment connectivity. Geomorphology, 188, 31–41.\n
-*Key, C. H., & Benson, N. C. (2006). Landscape assessment: Ground measure of severity, the Composite Burn Index. USDA Forest Service.\n
-*Keeley, J. E. (2009). Fire intensity, fire severity and burn severity. Int. J. Wildland Fire, 18(1), 116–126.\n
-*Martini, L., Faes, L., Picco, L., Iroumé, A., Lingua, E., Garbarino, M., & Cavalli, M. (2020). Assessing the effect of fire severity on sediment connectivity in central Chile. Science of The Total Environment, 728, 139006. https://doi.org/10.1016/j.scitotenv.2020.139006\n
-*Rouse, J. W., Haas, R. H., Schell, J. A., & Deering, D. W. (1974). Monitoring vegetation systems with ERTS. NASA, ERTS Symposium.\n
-*European Space Agency (ESA). (2016 - present). Sentinel-2 L2A imagery. Retrieved from Copernicus Open Access Hub.\n
-*Tarboton, D. G. (2023). TauDEM: Terrain Analysis Using Digital Elevation Models. Utah State University. Retrieved from https://hydrology.usu.edu/taudem\n
-*OpenAI. (2025). ChatGPT (versione GPT-4). https://openai.com/chatgpt\n
-*Google. (2025). Gemini [Large language model]. Retrieved from https://gemini.google.com\n
+
+ * Borselli, L., Cassi, P., & Torri, D. (2008). Prolegomena to sediment and flow connectivity in the landscape. Catena, 75(3), 268–277.
+ * 
+*Cavalli, M., Tarolli, P., Marchi, L., & Dalla Fontana, G. (2008). The effectiveness of airborne LiDAR data in the recognition of channel-bed morphology. CATENA, 73(3), 249–260. https://doi.org/10.1016/j.catena.2007.11.001
+
+*Cavalli, M., Trevisani, S., Comiti, F., & Marchi, L. (2013). Geomorphometric assessment of spatial sediment connectivity. Geomorphology, 188, 31–41.
+
+*Key, C. H., & Benson, N. C. (2006). Landscape assessment: Ground measure of severity, the Composite Burn Index. USDA Forest Service.
+
+*Keeley, J. E. (2009). Fire intensity, fire severity and burn severity. Int. J. Wildland Fire, 18(1), 116–126.
+
+*Martini, L., Faes, L., Picco, L., Iroumé, A., Lingua, E., Garbarino, M., & Cavalli, M. (2020). Assessing the effect of fire severity on sediment connectivity in central Chile. Science of The Total Environment, 728, 139006. https://doi.org/10.1016/j.scitotenv.2020.139006
+
+*Rouse, J. W., Haas, R. H., Schell, J. A., & Deering, D. W. (1974). Monitoring vegetation systems with ERTS. NASA, ERTS Symposium.
+
+*European Space Agency (ESA). (2016 - present). Sentinel-2 L2A imagery. Retrieved from Copernicus Open Access Hub.
+
+*Tarboton, D. G. (2023). TauDEM: Terrain Analysis Using Digital Elevation Models. Utah State University. Retrieved from https://hydrology.usu.edu/taudem
+
+*OpenAI. (2025). ChatGPT (versione GPT-4). https://openai.com/chatgpt
+
+*Google. (2025). Gemini [Large language model]. Retrieved from https://gemini.google.com
+
 *Powered by SUBSTR8 version 1.0, platform for the quick creation of Standalone, Modular and Fast Spatial Analysis Tools (Unpublished).
+
