@@ -36,10 +36,15 @@ Hazard Scenarios (HS)
 | HS3 | Veg. Recovery | No | Areas with significant dense vegetation regrowth. |
 | HS4 | Veg. Recovery | Yes | Terraced slopes with dense vegetation recovery. |
 
-Quick Guide for interpretation
-Take the highest firex values for HS1 or HS2 scenarios immediately outside of the burned area perimeter. Those values 
-are the Safety Threshold for burned area and the lower boundary for low susceptibility class inside the burned area. 
-All the values above such Safety Threshold indicate higher susceptibiility. Higher the value, Higher the susceptibility.
+🔍 Quick Guide for interpretation
+
+*Sampling: Identify the highest FIREX values for HS1 or HS2 scenarios in areas immediately outside the burned perimeter (unburned/vegetated conditions).
+
+*Safety Threshold: These values define the Safety Threshold and the lower limit for the low-susceptibility class within the burned area.
+
+*Hazard Assessment: * Values > Safety Threshold: Indicate higher susceptibility.
+
+*Proportionality: The higher the value, the higher the susceptibility.
 
 📄 License & Contact
  * License: GNU Affero General Public License v3.0 (AGPL-3.0).
