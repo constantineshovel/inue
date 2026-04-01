@@ -9,6 +9,7 @@ INUE is a rapid assessment tool designed to map erosion susceptibility in postfi
  * 
 🔬 Methodology: The FIREX Index
 The core of the tool is the FIREX index, which models postfire sediment dynamics by adjusting a stable Sediment Connectivity Index based on burn severity and landscape factors.
+ * IC (Borselli et al 2008) 
  * IC_{normalized}: Normalized Sediment Connectivity Index.
  * dNBR_{normalized}: Reclassified Burn Severity.
  * gDI: Geomorphologic Sediment Disconnection Index (for landforms like terraces).
