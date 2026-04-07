@@ -29,7 +29,7 @@ The core of the tool is the FIREX index, which models postfire sediment dynamics
  * Hazard Scenario (HS) Selection: Configure the GUI switchers to match your area's local conditions (vegetation recovery and/or landforms).
  * Final Map: Generate the Postfire Erosion Susceptibility map - FIREX.
  * 
-Hazard Scenarios (HS)
+🧨 Hazard Scenarios (HS)
 | Scenario | Configuration | Disconnecting Landforms | Description |
 |---|---|---|---|
 | HS1 | Postfire | No | Bare burned area or sparse regrowth. |
@@ -37,7 +37,7 @@ Hazard Scenarios (HS)
 | HS3 | Veg. Recovery | No | Areas with significant dense vegetation regrowth. |
 | HS4 | Veg. Recovery | Yes | Terraced slopes with dense vegetation recovery. |
 
-🔍 Quick Guide for interpretation
+🧐 Quick Guide for interpretation
 
 *Sampling: Identify the highest FIREX values for HS1 or HS2 scenarios in areas immediately outside the burned perimeter (unburned/vegetated conditions).
 
