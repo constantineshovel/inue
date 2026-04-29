@@ -51,7 +51,12 @@ The core of the tool is the FIREX index, which models postfire sediment dynamics
  * License: GNU Affero General Public License v3.0 (AGPL-3.0).
  * Developer: Costantino Pala (Geoscientist, GIS Specialist, PhD)
  * Contact: costantino.pala.geo@proton.me
- * 
+
+📦 What to expect from the 1.2 version
+The updates will be strictly related to some improvements in SUBSTR8:
+ * CLI - Command Line Interface 😏
+ * improved gDI handling 
+
 📚 Bibliography
 
  * Borselli, L., Cassi, P., & Torri, D. (2008). Prolegomena to sediment and flow connectivity in the landscape. Catena, 75(3), 268–277.
