@@ -56,10 +56,6 @@ The core of the tool is the FIREX index, which models postfire sediment dynamics
  * Developer: Costantino Pala (Geoscientist, GIS Specialist, PhD)
  * Contact: costantino.pala.geo@proton.me
 
-📦 What to expect from the 1.2 version
-The updates will be strictly related to some improvements in SUBSTR8:
- * CLI - Command Line Interface 😏
- * improved gDI handling
 
 📚 Bibliography
 
