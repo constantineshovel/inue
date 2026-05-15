@@ -8,11 +8,15 @@
 # This file was created in the framework of a PhD funded by CNR-IRPI-PG and DSCG-UNICA
 # Written by me, with coding support and suggestions from ChatGPT.
 
-
+import os
 import platform
+
+os.environ.pop('PROJ_LIB', None)
+os.environ.pop('PROJ_DATA', None)
+
 import GUI #The INUE Guided User Interface
 from assetios import parameters
-import os
+
 
 
 def prataforma():
