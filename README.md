@@ -2,7 +2,7 @@
   <img src="inueback.png" width="400">
 </p>
 
-INUE v1.1 άλφα 🛰️🔥
+INUE v1.1.1 άλφα 🛰️🔥
 INteractive and User-friendly Emergency tool for Postfire Erosion Susceptibility Mapping from Remote Sensing Data
 INUE is a rapid assessment tool designed to map erosion susceptibility in postfire landscapes. Built on the SUBSTR8 platform, it allows for fast prioritization of at-risk watersheds using remote sensing data during the critical emergency phase.
 
