@@ -26,7 +26,13 @@ The core of the tool is the FIREX index, which models postfire sediment dynamics
  * RAM: 8 GB.
  * Mandatory Software: TauDEM v5.3.7 or higher.
  * Input Data: DEM (10m to 1m resolution suggested), Study Area Shapefile, Road Network Shapefile, and NIR/SWIR satellite imagery (Sentinel-2 or Landsat).
- * 
+ * for Linux users: download the script install_taudem.sh, open a terminal window in the folder where it is saved and type:
+
+chmod +x install_taudem.sh
+
+./install_taudem.sh
+
+ *
 🚀 Workflow
  * Preliminary Operations: Set the EPSG, Spatial Resolution, and NDVI Threshold. Use the Resample and Crop tools to ensure all input rasters match in extent and resolution.
  * Module Execution: Run the DEMROAD Crafter, Sediment Connectivity Calculator, and Burnt Area Analyzer plus the additional indexes for sediment disconnection as required by your analysis 
