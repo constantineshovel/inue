@@ -21,7 +21,7 @@ The core of the tool is the FIREX index, which models postfire sediment dynamics
  * cf: Local variables or triggering phenomena (optional).
  * 
 🛠️ System Requirements
- * OS: Windows 10/11 (64-bit).
+ * OS: Windows 10/11 (64-bit), Linux (64bit)
  * CPU: Dual-Core 3.10 GHz or equivalent.
  * RAM: 8 GB.
  * Mandatory Software: TauDEM v5.3.7 or higher.
