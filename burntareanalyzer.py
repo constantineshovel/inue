@@ -106,7 +106,7 @@ def fogu(use_log_window=True, log_file_path=None):
 
     log_window = None
     if use_log_window:
-        log_window = LogWindow(title="INUE - version 1.1 άλφα Burnt Area Analyzer module", 
+        log_window = LogWindow(title="INUE - version 1.1.1 άλφα Burnt Area Analyzer module", 
                                icon_path=resource_path("inue_YQZ_icon.ico"),
                                log_file_path=log_file_path)
         log_window.update()#keeps the logger open while calculating
