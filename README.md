@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="inueback.png" width="400">
+  <img src="inue.png" width="400">
 </p>
 
 INUE v1.1.1 άλφα 🛰️🔥
