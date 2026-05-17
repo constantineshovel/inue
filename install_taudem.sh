@@ -12,7 +12,7 @@ echo "============================================"
 
 # --- 1. Dipendenze di sistema ---
 echo "[1/5] Installazione dipendenze..."
-sudo apt install -y cmake mpich libgdal-dev git
+sudo apt install -y cmake openmpi-bin libopenmpi-dev libgdal-dev git
 
 # --- 2. Clona il repository ---
 echo "[2/5] Download TauDEM..."
