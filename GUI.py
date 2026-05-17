@@ -46,12 +46,13 @@ def GUI():
     root.title("INUE - INteractive and Userfriendly Emergency tool for postfire erosion susceptibility mapping v. 1.1 'άλφα'")
 
     sistema = parameters["sistema"]
+    sistema = parameters["sistema"]
     if sistema == 2:
-        try: root.iconbitmap(resource_path("inue_YQZ_icon.ico"))
-        except: pass
+        root.iconbitmap(resource_path("inue_YQZ_icon.ico"))
     elif sistema == 1:
-        try: root.iconbitmap(resource_path("inue256.png"))        
-        except: pass
+        from PIL import ImageTk
+        icon_img = ImageTk.PhotoImage(Image.open(resource_path("inue256.png")))
+    root.iconphoto(True, icon_img)
 
     # Set window size
     dwith = root.winfo_screenwidth()
