@@ -20,16 +20,16 @@ def resource_path(relative_path):
 
 # 1. Info Anagrafiche (Top-Left)
 INFO_TEXT = (
-    "Version 1.1 'άλφα'\n\n"
+    "Version 1.1.1 'άλφα'\n\n"
     "DEVELOPER:\n"
     "Costantino Pala\n"
-    "Geoscientist, PhD Student\n\n"
+    "Geoscientist, PhD\n\n"
     "INSTITUTIONS:\n"
     "University of Cagliari\n"
     "Department of Chemical and Geological Sciences\n"
     "TeleGIS Laboratory\n"
     "CONTACT:\n"
-    "costantino.pala@unica.it"
+    "costantino.pala.geo@proton.me"
 )
 
 # 2. Guida Rapida (Top-Right)
@@ -793,7 +793,12 @@ def about():
     about_window.geometry(f"{int(w)}x{int(h)}+{int(x)}+{int(y)}")
     
     try:
-        about_window.iconbitmap(resource_path("inue_YQZ_icon.ico"))
+        if parameters["sistema"] == 2:
+            about_window.iconbitmap(resource_path("inue_YQZ_icon.ico"))
+        elif parameters["sistema"] == 1:
+            from PIL import ImageTk
+            icon_img = ImageTk.PhotoImage(Image.open(resource_path("inue256.png")))
+            about_window.iconphoto(True, icon_img)
     except:
         pass
 
@@ -831,7 +836,7 @@ def about():
         ctk.CTkLabel(frame_info, text="INUE LOGO", font=font_title).pack(pady=20)
 
     # Titolo
-    ctk.CTkLabel(frame_info, text="INUE v. 1.1", font=("Open Sans", 24, "bold"), text_color="black").pack()
+    ctk.CTkLabel(frame_info, text="INUE v. 1.1.1", font=("Open Sans", 24, "bold"), text_color="black").pack()
     ctk.CTkLabel(frame_info, text="Powered by SUBSTR8", font=("Open Sans", 12, "italic"), text_color="#00695C").pack(pady=(0, 10))
 
     # Info Testo
