@@ -165,7 +165,7 @@ def scc(use_log_window=True, log_file_path=None):
 
     sys.stdout = LogFileWriter(log_file_path) if not use_log_window else sys.stdout
 
-    print("====== INUE - version 1.1 άλφα - Local Variable Applier Module ======")
+    print("====== INUE - version 1.1.1 άλφα - Local Variable Applier Module ======")
     print(f"Session started: {datetime.datetime.now()}\n")
     log_window.update() if log_window else None
 
