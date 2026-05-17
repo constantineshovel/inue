@@ -2,7 +2,7 @@
 # This software is provided "as is", without any warranty
 # The author is not responsible for any damages resulting from its use
 # LICENSE:
-# This file is part of INUE - INteractive and Userfriendly Emergency tool for burnt areas v. 1.1 'άλφα, released under the GNU Affero General Public License v3.
+# This file is part of INUE - INteractive and Userfriendly Emergency tool for burnt areas v. 1.1.1 'άλφα, released under the GNU Affero General Public License v3.
 # See the LICENSE file or https://www.gnu.org/licenses/agpl-3.0.html for more details.
 # Copyright Costantino Pala © 2025
 # This file was created in the framework of a PhD funded by CNR-IRPI-PG and DSCG-UNICA
@@ -59,14 +59,56 @@ def write_to_log(message, log_file_path):
     with open(log_file_path, "a", encoding="utf-8") as log_file:
         log_file.write(message)
 
-class LogWindow(ctk.CTk):
+def resource_path(relative_path):
+    if getattr(sys, 'frozen', False):  
+        base_path = sys._MEIPASS  
+    else:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
+class PrintRedirector:
+    def __init__(self, text_widget, log_file_path):
+        self.text_widget = text_widget
+        self.log_file_path = log_file_path  
+
+    def write(self, message):
+        self.text_widget.configure(state="normal")
+        self.text_widget.insert("end", message)
+        self.text_widget.see("end")
+        self.text_widget.configure(state="disabled")
+        write_to_log(message, self.log_file_path) 
+
+    def flush(self):
+        pass
+
+class LogFileWriter:
+    def __init__(self, log_file_path):
+        self.log_file_path = log_file_path
+
+    def write(self, message):
+        write_to_log(message, self.log_file_path)
+
+    def flush(self):
+        pass
+
+def write_to_log(message, log_file_path):
+    with open(log_file_path, "a", encoding="utf-8") as log_file:
+        log_file.write(message)
+
+class LogWindow(ctk.CTkToplevel):
     def __init__(self, title="Log", icon_path=None, log_file_path="disconnector.log"):
         self.original_stdout = sys.stdout
         super().__init__()
 
         self.title(title)
         if icon_path:
-            self.iconbitmap(icon_path)
+            if parameters["sistema"] == 2:
+                self.iconbitmap(icon_path)
+            elif parameters["sistema"] == 1:
+                import tkinter as tk
+                icon_img = tk.PhotoImage(file=resource_path("inue256.png"))
+                self.iconphoto(True, icon_img)
 
         self.geometry("800x600")
         self.resizable(True, True)
@@ -74,13 +116,13 @@ class LogWindow(ctk.CTk):
         self.text_area = ctk.CTkTextbox(self, wrap="word", state="disabled", font=("Open Sans", 12))
         self.text_area.pack(expand=True, fill="both", padx=10, pady=10)
 
-        sys.stdout = PrintRedirector(self.text_area, log_file_path)  #Calls the function to send the print to the log
+        sys.stdout = PrintRedirector(self.text_area, log_file_path)  
 
-        self.protocol("WM_DELETE_WINDOW", self.on_close)  #Manages the window closing
+        self.protocol("WM_DELETE_WINDOW", self.on_close)  
 
-    def on_close(self):#this function reset the stdout.. since the log function is the same across the modules it prevents problems
-            if hasattr(self, "original_stdout"):
-                sys.stdout = self.original_stdout #stdout reset
+    def on_close(self):
+            if hasattr(self, "original_stdout"):  
+                sys.stdout = self.original_stdout  
             self.destroy()
 
 def arbures(use_log_window=True, log_file_path=None):
@@ -98,14 +140,14 @@ def arbures(use_log_window=True, log_file_path=None):
 
     log_window = None
     if use_log_window:
-        log_window = LogWindow(title="INUE - version 1.1 άλφα - NDVI Thresholder module", 
+        log_window = LogWindow(title="INUE - version 1.1.1 άλφα - NDVI Thresholder module", 
                                icon_path=resource_path("inue_YQZ_icon.ico"),
                                log_file_path=log_file_path)
         log_window.update()  #This mantains the windows open while processing
 
     sys.stdout = LogFileWriter(log_file_path) if not use_log_window else sys.stdout
 
-    print("====== INUE - version 1.1 άλφα - NDVI Thresholder Module ======")
+    print("====== INUE - version 1.1.1 άλφα - NDVI Thresholder Module ======")
     print(f"Session started: {datetime.datetime.now()}\n")
     log_window.update() if log_window else None  #Window updater
     cumintzora = datetime.datetime.now()
