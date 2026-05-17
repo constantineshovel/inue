@@ -2,10 +2,11 @@
 # This software is provided "as is", without any warranty
 # The author is not responsible for any damages resulting from its use
 #LICENSE:
-# This file is part of INUE - INteractive and Userfriendly Emergency tool for burnt areas v. 1.1 'άλφα, released under the GNU Affero General Public License v3.
+# This file is part of INUE - INteractive and Userfriendly Emergency tool for burnt areas v. 1.1.1 'άλφα, released under the GNU Affero General Public License v3.
 # See the LICENSE file or https://www.gnu.org/licenses/agpl-3.0.html for more details.
-#Copyright Costantino Pala © 2025
+#Copyright Costantino Pala © 2026
 #This file was created in the framework of a PhD funded by CNR-IRPI-PG and DSCG-UNICA
+
 
 from assetios import input_tiff, output_tiff, parameters
 import os
@@ -58,14 +59,19 @@ def write_to_log(message, log_file_path):
     with open(log_file_path, "a", encoding="utf-8") as log_file:
         log_file.write(message)
 
-class LogWindow(ctk.CTk):
+class LogWindow(ctk.CTkToplevel):
     def __init__(self, title="Log", icon_path=None, log_file_path="disconnector.log"):
         self.original_stdout = sys.stdout
         super().__init__()
 
         self.title(title)
         if icon_path:
-            self.iconbitmap(icon_path)
+            if parameters["sistema"] == 2:
+                self.iconbitmap(icon_path)
+            elif parameters["sistema"] == 1:
+                import tkinter as tk
+                icon_img = tk.PhotoImage(file=resource_path("inue256.png"))
+                self.iconphoto(True, icon_img)
 
         self.geometry("800x600")
         self.resizable(True, True)
@@ -104,11 +110,12 @@ def fogu(use_log_window=True, log_file_path=None):
                                icon_path=resource_path("inue_YQZ_icon.ico"),
                                log_file_path=log_file_path)
         log_window.update()#keeps the logger open while calculating
+        log_window.update()#keeps the logger open while calculating
 
     # Reindirizza i print sia al file di log che alla finestra (se attiva)
     sys.stdout = LogFileWriter(log_file_path) if not use_log_window else sys.stdout
 
-    print("====== INUE - version 1.1 άλφα - Burnt Area Analyzer Module ======")
+    print("====== INUE - version 1.1.1 άλφα - Burnt Area Analyzer Module ======")
     print(f"Session started: {datetime.datetime.now()}\n")
     log_window.update() if log_window else None
 
