@@ -2,9 +2,9 @@
 # This software is provided "as is", without any warranty
 # The author is not responsible for any damages resulting from its use
 #LICENSE:
-# This file is part of INUE - INteractive and Userfriendly Emergency tool for burnt areas v. 1.1 'άλφα, released under the GNU Affero General Public License v3.
+# This file is part of INUE - INteractive and Userfriendly Emergency tool for burnt areas v. 1.1.1 'άλφα, released under the GNU Affero General Public License v3.
 # See the LICENSE file or https://www.gnu.org/licenses/agpl-3.0.html for more details.
-#Copyright Costantino Pala © 2025
+#Copyright Costantino Pala © 2026
 #This file was created in the framework of a PhD funded by CNR-IRPI-PG and DSCG-UNICA
 
 
@@ -21,6 +21,7 @@ import dask.array as da#manages arrays in chunks, allowing multiprocessing
 import customtkinter as ctk#The library used to build the GUI. In this case is needed to open the logger
 import sys#useful when giving an icon to the logger window
 from PIL import Image#useful when giving an icon to the logger window
+import shutil
 
 def resource_path(relative_path):#you can find comments about this functions in the module ndvithresholder.py
     if getattr(sys, 'frozen', False):
@@ -59,14 +60,56 @@ def write_to_log(message, log_file_path):
     with open(log_file_path, "a", encoding="utf-8") as log_file:
         log_file.write(message)
 
-class LogWindow(ctk.CTk):
+def resource_path(relative_path):
+    if getattr(sys, 'frozen', False):  
+        base_path = sys._MEIPASS  
+    else:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
+class PrintRedirector:
+    def __init__(self, text_widget, log_file_path):
+        self.text_widget = text_widget
+        self.log_file_path = log_file_path  
+
+    def write(self, message):
+        self.text_widget.configure(state="normal")
+        self.text_widget.insert("end", message)
+        self.text_widget.see("end")
+        self.text_widget.configure(state="disabled")
+        write_to_log(message, self.log_file_path) 
+
+    def flush(self):
+        pass
+
+class LogFileWriter:
+    def __init__(self, log_file_path):
+        self.log_file_path = log_file_path
+
+    def write(self, message):
+        write_to_log(message, self.log_file_path)
+
+    def flush(self):
+        pass
+
+def write_to_log(message, log_file_path):
+    with open(log_file_path, "a", encoding="utf-8") as log_file:
+        log_file.write(message)
+
+class LogWindow(ctk.CTkToplevel):
     def __init__(self, title="Log", icon_path=None, log_file_path="disconnector.log"):
         self.original_stdout = sys.stdout
         super().__init__()
 
         self.title(title)
         if icon_path:
-            self.iconbitmap(icon_path)
+            if parameters["sistema"] == 2:
+                self.iconbitmap(icon_path)
+            elif parameters["sistema"] == 1:
+                import tkinter as tk
+                icon_img = tk.PhotoImage(file=resource_path("inue256.png"))
+                self.iconphoto(True, icon_img)
 
         self.geometry("800x600")
         self.resizable(True, True)
@@ -74,13 +117,13 @@ class LogWindow(ctk.CTk):
         self.text_area = ctk.CTkTextbox(self, wrap="word", state="disabled", font=("Open Sans", 12))
         self.text_area.pack(expand=True, fill="both", padx=10, pady=10)
 
-        sys.stdout = PrintRedirector(self.text_area, log_file_path) 
+        sys.stdout = PrintRedirector(self.text_area, log_file_path)  
 
-        self.protocol("WM_DELETE_WINDOW", self.on_close)
+        self.protocol("WM_DELETE_WINDOW", self.on_close)  
 
     def on_close(self):
-            if hasattr(self, "original_stdout"):
-                sys.stdout = self.original_stdout
+            if hasattr(self, "original_stdout"):  
+                sys.stdout = self.original_stdout  
             self.destroy()
 
 coro = parameters['coro']#the number of cores available in your machine. this number is useful to load MPI prompts to use all the available cores
@@ -115,14 +158,15 @@ def tauexecuter(taucommand, resolution, epsg, otrs, output_folder, corenumber = 
     """
     global syst
     syst = parameters["sistema"]#system code for taudem. based on the OS gives the right MPI sintax to launch the TauDEM module.. tested on linux, must be tested on macos
-    
+    whereistau = os.path.expanduser("~/TauDEM/src/build")
     if taucommand == 'FillDem':#1 output: path to filled dem
         global filledem
         output_folder = parameters['out_fold']
         filledem = os.path.join(output_folder, 'filledem.tif')
         match syst:
             case 1:
-                result=subprocess.run(f"mpiexec -n {coro} pitremove -z \"{DEM}\" -fel \"{filledem}\"",
+                pitpath = os.path.join(whereistau, 'pitremove')
+                result=subprocess.run(f"mpiexec -n {coro} {pitpath} -z \"{DEM}\" -fel \"{filledem}\"",
                                  capture_output=True, text=True, shell=True
             )
                 print(result.stdout)
@@ -154,7 +198,8 @@ def tauexecuter(taucommand, resolution, epsg, otrs, output_folder, corenumber = 
         slopedirinf = os.path.join(output_folder, sgh)#slope output path
         match syst:
             case 1:#linux
-                result = subprocess.run(f'mpiexec -n {coro} dinfflowdir -fel \"{flowdirinput}\" -ang \"{flowdirinf}\" -slp \"{slopedirinf}\"',
+                inflowdirpath = os.path.join(whereistau, 'dinfflowdir')
+                result = subprocess.run(f'mpiexec -n {coro} {inflowdirpath} -fel \"{flowdirinput}\" -ang \"{flowdirinf}\" -slp \"{slopedirinf}\"',
                              capture_output=True, text=True, shell=True
                 )
                 print(result.stdout)
@@ -205,8 +250,9 @@ def tauexecuter(taucommand, resolution, epsg, otrs, output_folder, corenumber = 
         if demwg is None:
             match syst:
                 case 1:
+                    inareadinf = os.path.join(whereistau, 'areadinf')
                     result = subprocess.run(
-                    f'mpiexec -n {coro} areadinf -ang \"{scainput}\" -sca \"{demsca}\" -nc',
+                    f'mpiexec -n {coro} {inareadinf} -ang \"{scainput}\" -sca \"{demsca}\" -nc',
                     capture_output=True, text=True, shell=True
                 )
                     print(result.stdout)
@@ -230,8 +276,9 @@ def tauexecuter(taucommand, resolution, epsg, otrs, output_folder, corenumber = 
             wgfile = os.path.join(output_folder, dws)
             match syst:
                 case 1:
+                    inareadinf = os.path.join(whereistau, 'areadinf')
                     result = subprocess.run(
-                    f'mpiexec -n {coro} areadinf -ang \"{scainput}\" -sca \"{demsca}\" -wg \"{wgfile}\" -nc',
+                    f'mpiexec -n {coro} {inareadinf} -ang \"{scainput}\" -sca \"{demsca}\" -wg \"{wgfile}\" -nc',
                     capture_output=True, text=True, shell=True
                 )
                     print(result.stdout)
@@ -269,8 +316,9 @@ def tauexecuter(taucommand, resolution, epsg, otrs, output_folder, corenumber = 
         X = os.path.join(output_folder, 'X.tif')
         match syst:
             case 1:
+                indinfdown = os.path.join(whereistau, 'dinfdistdown')
                 result = subprocess.run(
-               f'mpiexec -n {coro} dinfdistdown -ang \"{dirfleg}\" -fel \"{filledem}\" -src \"{rivfleg}\" -wg \"{demwg}\" -dd \"{X}\" -m min v -nc',
+               f'mpiexec -n {coro} {indinfdown} -ang \"{dirfleg}\" -fel \"{filledem}\" -src \"{rivfleg}\" -wg \"{demwg}\" -dd \"{X}\" -m min v -nc',
                 capture_output=True, text=True, shell=True
             )
                 print(result.stdout)
