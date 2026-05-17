@@ -2,9 +2,9 @@
 # This software is provided "as is", without any warranty
 # The author is not responsible for any damages resulting from its use
 # LICENSE:
-# This file is part of INUE - INteractive and Userfriendly Emergency tool for burnt areas v. 1.1 'άλφα, released under the GNU Affero General Public License v3.
+# This file is part of INUE - INteractive and Userfriendly Emergency tool for burnt areas v. 1.1.1 'άλφα, released under the GNU Affero General Public License v3.
 # See the LICENSE file or https://www.gnu.org/licenses/agpl-3.0.html for more details.
-# Copyright Costantino Pala © 2025
+# Copyright Costantino Pala © 2026
 # This file was created in the framework of a PhD funded by CNR-IRPI-PG and DSCG-UNICA
 # Written by me, with coding support and suggestions from ChatGPT.
 
@@ -732,18 +732,20 @@ def resource_path(relative_path):
 
 def file_manager():
     ctk.set_appearance_mode("light")
-    window = ctk.CTk()
-    window.title("INUE v1.1 άλφα - Preliminary Operations")
+    window = ctk.CTkToplevel()
+    window.title("INUE v1.1.1 άλφα - Preliminary Operations")
     window.geometry("500x600")
     # Define colors
     panel_color = "#ECEFF1"
     button_color = "#003366"
-    
+ 
     sistema = parameters["sistema"]
     if sistema == 2:
         window.iconbitmap(resource_path("inue_YQZ_icon.ico"))
     elif sistema == 1:
-        window.iconbitmap(resource_path("inue256.png"))     
+        import tkinter as tk
+        icon_img = tk.PhotoImage(file=resource_path("inue256.png"))
+        window.iconphoto(True, icon_img)  
 
     # Set the window background color
     window.configure(bg=panel_color)
@@ -812,4 +814,4 @@ def file_manager():
     ctk.CTkButton(frame_left, text="Resample", font=font_style_executor, fg_color=button_color, command=lambda: resample(resample_entry.get(), resolution_entry.get(), output_resample_entry.get())).pack(pady=10)
 
 
-    window.mainloop()
+    
