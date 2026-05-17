@@ -1,516 +1,892 @@
-# DISCLAIMER OF LIABILITY:
-# This software is provided "as is", without any warranty
-# The author is not responsible for any damages resulting from its use
-# LICENSE:
-# This file is part of INUE - INteractive and Userfriendly Emergency tool for burnt areas v. 1.1 'άλφα, released under the GNU Affero General Public License v3.
-# See the LICENSE file or https://www.gnu.org/licenses/agpl-3.0.html for more details.
-# Copyright Costantino Pala © 2025
-# This file was created in the framework of a PhD funded by CNR-IRPI-PG and DSCG-UNICA
-# Written by me, with coding support and suggestions from ChatGPT and Google Gemini.
-
+import customtkinter as ctk
 import os
 import sys
-import tkinter as tk
-import customtkinter as ctk
-from tkinter import filedialog
-import file_manager as manager 
-import consedinx as csi 
-import burntareanalyzer 
-import disconnector as disc 
-import ndvithresholder 
-import PFES 
-import roadmask 
-import about 
-import assetios 
-from assetios import input_tiff, input_shp, output_tiff, parameters 
-from functools import partial 
-import threading as tred
-from concurrent.futures import ThreadPoolExecutor
-import customvariable 
-from PIL import Image, ImageTk
+from PIL import Image
 
-#___________________________________________________GUI_______________________________________________________________
-
+# -------------------------------------------------------------------------
+# RESOURCE PATH
+# -------------------------------------------------------------------------
 def resource_path(relative_path):
-    """The module obtains the proper path for the file, even when executed in an exe."""
-    if getattr(sys, 'frozen', False):  
+    """Obtain the proper path for icons/images, even if executed in an .exe"""
+    if getattr(sys, 'frozen', False):
         base_path = sys._MEIPASS
     else:
         base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)
 
-def GUI():
-    # Initialize the main window
-    ctk.set_appearance_mode("light")  
-    root = ctk.CTk()
-    root.title("INUE - INteractive and Userfriendly Emergency tool for postfire erosion susceptibility mapping v. 1.1 'άλφα'")
+# -------------------------------------------------------------------------
+# TEXT CONSTANTS
+# -------------------------------------------------------------------------
 
-    sistema = parameters["sistema"]
-    sistema = parameters["sistema"]
-    if sistema == 2:
-        root.iconbitmap(resource_path("inue_YQZ_icon.ico"))
-    elif sistema == 1:
-        from PIL import ImageTk
-        icon_img = ImageTk.PhotoImage(Image.open(resource_path("inue256.png")))
-    root.iconphoto(True, icon_img)
+# 1. Info Anagrafiche (Top-Left)
+INFO_TEXT = (
+    "Version 1.1 'άλφα'\n\n"
+    "DEVELOPER:\n"
+    "Costantino Pala\n"
+    "Geoscientist, PhD Student\n\n"
+    "INSTITUTIONS:\n"
+    "University of Cagliari\n"
+    "Department of Chemical and Geological Sciences\n"
+    "TeleGIS Laboratory\n"
+    "CONTACT:\n"
+    "costantino.pala@unica.it"
+)
 
-    # Set window size
-    dwith = root.winfo_screenwidth()
-    dheig = root.winfo_screenheight()
-    root.geometry(f"{dwith}x{dheig}")
+# 2. Guida Rapida (Top-Right)
+QUICK_HELP_TEXT = """
 
-    # Define colors
-    panel_color = "#ECEFF1"
-    button_color = "#003366" 
+INUE is useful to draft postfire erosion susceptibility maps with remote sensing data, mainly recovered from the web.
+The maps are intended to support emergency teams when few data is available for the use of more advanced and specific models.
+Buttons in the main interface darken automatically when files are successfully calculated. For example, calculate the IC or dNBR using the Sediment Connector and Burnt Area Analyzer modules, then look at the red 'normalized IC' and 'dNBR' buttons at the bottom: they will darken to signal readiness.
 
-    # Set the window background color
-    root.configure(bg=panel_color)
 
-    # Set Segoe UI font in bold
-    font_style = ("Open Sans", 14, "bold")
-    font_header = ("Open Sans", 16, "bold")
+1. PRELIMINARY OPERATIONS:
+   • Use "Preliminary Operations" to define EPSG, Spatial Resolution, and NDVI threshold.
+   • Ensure grid consistency: Use Resample and Crop tools to align all input files to the smallest extent/resolution (mandatory for Python processing).
+   • Select the "Processed Files Directory" immediately. Note: Crop/Resample operations save to a separate intermediate folder.
 
-    # ---------------------------------------------------------
-    # 0. LOGICA SWITCHER (Anticipata per il Top Frame)
-    # ---------------------------------------------------------
-    def update_switcher_value(title, value):
-        parameters[title] = value 
-        print(f"Updated {title} to {value}")
+2. INPUT DATA (Left Panel):
+   • Load datasets (DEM, Shapefiles, Satellite). Buttons light up matching the color of the corresponding analysis module.
+   • Set your scenario by using the Switchers. You can opt to use custom W factors for IC calculation
+   • Please note that the effect of DEMROAD is visible only on DEM having Spatial Resolution => 2 m
+   • Customization: Use "Custom Variables Applier" or toggle the "W Index" switcher (Default: Roughness Index, Cavalli et al., 2008).
 
-    switcher_config = [
-        {"title": "Demroad", "sx_label": "On", "dx_label": "Off", "true": "Off", "false": "On"},
-        {"title": "W Index", "sx_label": "Default", "dx_label": "Your own", "true": "Your own", "false": "Default"},
-        {"title": "Area Configuration", "sx_label": "Postfire", "dx_label": "Veg. Recov.", "true": "Vegetation recovering", "false": "Postfire"},
-        {"title": "Disconnecting Landforms", "sx_label": "No", "dx_label": "Yes", "true": "Yes", "false": "No"}
-    ]
+3. PROCESSING (Right Panel):
+   • Click function buttons to execute.
+   • Violet: Index of Connectivity IC
+   • Orange: Burnt Area Analysis.
+   • Blue: gDI, sediment dysconnectivity by landforms
+   • Green: VRf, sediment dysconnectivity by effective postfire vegetation growth
+   • Teal: CF, custom variable applier. Examples: local variables influencing the processes or triggers
+   • Red (PFES): Generates the final Erosion Susceptibility Map.
+
+4. SUPPORT:
+   • Refer to the Bibliography panel for scientific references and full methodology.
+
+5. FIREX map interpretation:
+Fixed ranges are misleading because every burned area is unique. I suggest you look at FIREX values in the HS1 (Area configuration: postfire;  disconnecting lanforms: no) or HS2 (Area configuration:postfire; disconnecting landforms yes)  scenarios outside of the Burned Scar. Look at slopes where no erosion occurred before the fire, with similar geomorphology (similar IC) and similar dNBR and vegetation. The FIREX values occurring there (I suggest you find a range of values) are indicative of safer conditions and are the markers for low susceptibility class. Higher values are indicative of disturbance and higher the value, higher the disturbance. 
+
+6. WARNING:
+
+INUE is the software for you if:
+•	Rapid Prioritization > You need to quickly identify (even approximately!) which watersheds or slopes are most at risk and prioritize areas for field surveys and the specific procedures required.
+•	Emergency Phase Mapping > You need to produce erosion susceptibility map immediately after a fire, using mostly remotely sensed data.
+•	Screening with Limited Data > You have very little time and only the few basic datasets usually available during an emergency.
+•	Modeling Connectivity Spikes > You want to account for how burn severity and vegetation loss dramatically increase the likelihood of sediment reaching the river network.
+•	Considering Landforms & Recovery > You need a fast way to include the mitigating effects of terraces, roads, or new vegetation regrowth in your assessment.
+________________________________________
+You must NOT use INUE if you are looking for:
+•	Sediment Yields > It does not calculate/estimate the total volume or mass of sediment produced.
+•	Sediment Fluxes > It does not provide measurements of sediment transport rates over time.
+•	Exact Physical Predictions > It is an empirical screening tool for relative susceptibility, not a high-precision physical or hydrological model.
+•	You can opt for more precise techniques  > Do you have the data and the models? Use them, please!
+INUE is not intended for these purposes. If your objectives require physical precision, please discontinue use and refer to specific sediment transport models.
+
+"""
+
+
+
+# 3. Bibliografia (Bottom-Left) - Recuperata dal tuo file
+BIBLIOGRAPHY_TEXT = """
+Borselli, L., Cassi, P., & Torri, D. (2008). Prolegomena to sediment and flow connectivity in the landscape. Catena, 75(3), 268–277.\n
+Cavalli, M., Tarolli, P., Marchi, L., & Dalla Fontana, G. (2008). The effectiveness of airborne LiDAR data in the recognition of channel-bed morphology. CATENA, 73(3), 249–260. https://doi.org/10.1016/j.catena.2007.11.001\n
+Cavalli, M., Trevisani, S., Comiti, F., & Marchi, L. (2013). Geomorphometric assessment of spatial sediment connectivity. Geomorphology, 188, 31–41.\n
+Key, C. H., & Benson, N. C. (2006). Landscape assessment: Ground measure of severity, the Composite Burn Index. USDA Forest Service.\n
+Keeley, J. E. (2009). Fire intensity, fire severity and burn severity. Int. J. Wildland Fire, 18(1), 116–126.\n
+Martini, L., Faes, L., Picco, L., Iroumé, A., Lingua, E., Garbarino, M., & Cavalli, M. (2020). Assessing the effect of fire severity on sediment connectivity in central Chile. Science of The Total Environment, 728, 139006. https://doi.org/10.1016/j.scitotenv.2020.139006\n
+Rouse, J. W., Haas, R. H., Schell, J. A., & Deering, D. W. (1974). Monitoring vegetation systems with ERTS. NASA, ERTS Symposium.\n
+European Space Agency (ESA). (2016 - present). Sentinel-2 L2A imagery. Retrieved from Copernicus Open Access Hub.\n
+Tarboton, D. G. (2023). TauDEM: Terrain Analysis Using Digital Elevation Models. Utah State University. Retrieved from https://hydrology.usu.edu/taudem\n
+OpenAI. (2025). ChatGPT (versione GPT-4). https://openai.com/chatgpt\n
+Google. (2025). Gemini [Large language model]. Retrieved from https://gemini.google.com\n
+Powered by SUBSTR8 version 1.0, platform for the quick creation of Standalone, Modular and Fast Spatial Analysis Tools (Unpublished).
+"""
+
+# 4. Licenza (Bottom-Right)
+LICENSE_TEXT = """GNU AFFERO GENERAL PUBLIC LICENSE
+                                      Version 3, 19 November 2007
+
+     Copyright (C) 2007 Free Software Foundation, Inc. <https://fsf.org/>
+     Everyone is permitted to copy and distribute verbatim copies
+     of this license document, but changing it is not allowed.
+
+                                        Preamble
+
+      The GNU Affero General Public License is a free, copyleft license for
+    software and other kinds of works, specifically designed to ensure
+    cooperation with the community in the case of network server software.
+
+      The licenses for most software and other practical works are designed
+    to take away your freedom to share and change the works.  By contrast,
+    our General Public Licenses are intended to guarantee your freedom to
+    share and change all versions of a program--to make sure it remains free
+    software for all its users.
+
+      When we speak of free software, we are referring to freedom, not
+    price.  Our General Public Licenses are designed to make sure that you
+    have the freedom to distribute copies of free software (and charge for
+    them if you wish), that you receive source code or can get it if you
+    want it, that you can change the software or use pieces of it in new
+    free programs, and that you know you can do these things.
+
+      Developers that use our General Public Licenses protect your rights
+    with two steps: (1) assert copyright on the software, and (2) offer
+    you this License which gives you legal permission to copy, distribute
+    and/or modify the software.
+
+      A secondary benefit of defending all users' freedom is that
+    improvements made in alternate versions of the program, if they
+    receive widespread use, become available for other developers to
+    incorporate.  Many developers of free software are heartened and
+    encouraged by the resulting cooperation.  However, in the case of
+    software used on network servers, this result may fail to come about.
+    The GNU General Public License permits making a modified version and
+    letting the public access it on a server without ever releasing its
+    source code to the public.
+
+      The GNU Affero General Public License is designed specifically to
+    ensure that, in such cases, the modified source code becomes available
+    to the community.  It requires the operator of a network server to
+    provide the source code of the modified version running there to the
+    users of that server.  Therefore, public use of a modified version, on
+    a publicly accessible server, gives the public access to the source
+    code of the modified version.
+
+      An older license, called the Affero General Public License and
+    published by Affero, was designed to accomplish similar goals.  This is
+    a different license, not a version of the Affero GPL, but Affero has
+    released a new version of the Affero GPL which permits relicensing under
+    this license.
+
+      The precise terms and conditions for copying, distribution and
+    modification follow.
+
+                           TERMS AND CONDITIONS
+
+      0. Definitions.
+
+      "This License" refers to version 3 of the GNU Affero General Public License.
+
+      "Copyright" also means copyright-like laws that apply to other kinds of
+    works, such as semiconductor masks.
+
+      "The Program" refers to any copyrightable work licensed under this
+    License.  Each licensee is addressed as "you".  "Licensees" and
+    "recipients" may be individuals or organizations.
+
+      To "modify" a work means to copy from or adapt all or part of the work
+    in a fashion requiring copyright permission, other than the making of an
+    exact copy.  The resulting work is called a "modified version" of the
+    earlier work or a work "based on" the earlier work.
+
+      A "covered work" means either the unmodified Program or a work based
+    on the Program.
+
+      To "propagate" a work means to do anything with it that, without
+    permission, would make you directly or secondarily liable for
+    infringement under applicable copyright law, except executing it on a
+    computer or modifying a private copy.  Propagation includes copying,
+    distribution (with or without modification), making available to the
+    public, and in some countries other activities as well.
+
+      To "convey" a work means any kind of propagation that enables other
+    parties to make or receive copies.  Mere interaction with a user through
+    a computer network, with no transfer of a copy, is not conveying.
+
+      An interactive user interface displays "Appropriate Legal Notices"
+    to the extent that it includes a convenient and prominently visible
+    feature that (1) displays an appropriate copyright notice, and (2)
+    tells the user that there is no warranty for the work (except to the
+    extent that warranties are provided), that licensees may convey the
+    work under this License, and how to view a copy of this License.  If
+    the interface presents a list of user commands or options, such as a
+    menu, a prominent item in the list meets this criterion.
+
+      1. Source Code.
+
+      The "source code" for a work means the preferred form of the work
+    for making modifications to it.  "Object code" means any non-source
+    form of a work.
+
+      A "Standard Interface" means an interface that either is an official
+    standard defined by a recognized standards body, or, in the case of
+    interfaces specified for a particular programming language, one that
+    is widely used among developers working in that language.
+
+      The "System Libraries" of an executable work include anything, other
+    than the work as a whole, that (a) is included in the normal form of
+    packaging a Major Component, but which is not part of that Major
+    Component, and (b) serves only to enable use of the work with that
+    Major Component, or to implement a Standard Interface for which an
+    implementation is available to the public in source code form.  A
+    "Major Component", in this context, means a major essential component
+    (kernel, window system, and so on) of the specific operating system
+    (if any) on which the executable work runs, or a compiler used to
+    produce the work, or an object code interpreter used to run it.
+
+      The "Corresponding Source" for a work in object code form means all
+    the source code needed to generate, install, and (for an executable
+    work) run the object code and to modify the work, including scripts to
+    control those activities.  However, it does not include the work's
+    System Libraries, or general-purpose tools or generally available free
+    programs which are used unmodified in performing those activities but
+    which are not part of the work.  For example, Corresponding Source
+    includes interface definition files associated with source files for
+    the work, and the source code for shared libraries and dynamically
+    linked subprograms that the work is specifically designed to require,
+    such as by intimate data communication or control flow between those
+    subprograms and other parts of the work.
+
+      The Corresponding Source need not include anything that users
+    can regenerate automatically from other parts of the Corresponding
+    Source.
+
+      The Corresponding Source for a work in source code form is that
+    same work.
+
+      2. Basic Permissions.
+
+      All rights granted under this License are granted for the term of
+    copyright on the Program, and are irrevocable provided the stated
+    conditions are met.  This License explicitly affirms your unlimited
+    permission to run the unmodified Program.  The output from running a
+    covered work is covered by this License only if the output, given its
+    content, constitutes a covered work.  This License acknowledges your
+    rights of fair use or other equivalent, as provided by copyright law.
+
+      You may make, run and propagate covered works that you do not
+    convey, without conditions so long as your license otherwise remains
+    in force.  You may convey covered works to others for the sole purpose
+    of having them make modifications exclusively for you, or provide you
+    with facilities for running those works, provided that you comply with
+    the terms of this License in conveying all material for which you do
+    not control copyright.  Those thus making or running the covered works
+    for you must do so exclusively on your behalf, under your direction
+    and control, on terms that prohibit them from making any copies of
+    your copyrighted material outside their relationship with you.
+
+      Conveying under any other circumstances is permitted solely under
+    the conditions stated below.  Sublicensing is not allowed; section 10
+    makes it unnecessary.
+
+      3. Protecting Users' Legal Rights From Anti-Circumvention Law.
+
+      No covered work shall be deemed part of an effective technological
+    measure under any applicable law fulfilling obligations under article
+    11 of the WIPO copyright treaty adopted on 20 December 1996, or
+    similar laws prohibiting or restricting circumvention of such
+    measures.
+
+      When you convey a covered work, you waive any legal power to forbid
+    circumvention of technological measures to the extent such circumvention
+    is effected by exercising rights under this License with respect to
+    the covered work, and you disclaim any intention to limit operation or
+    modification of the work as a means of enforcing, against the work's
+    users, your or third parties' legal rights to forbid circumvention of
+    technological measures.
+
+      4. Conveying Verbatim Copies.
+
+      You may convey verbatim copies of the Program's source code as you
+    receive it, in any medium, provided that you conspicuously and
+    appropriately publish on each copy an appropriate copyright notice;
+    keep intact all notices stating that this License and any
+    non-permissive terms added in accord with section 7 apply to the code;
+    keep intact all notices of the absence of any warranty; and give all
+    recipients a copy of this License along with the Program.
+
+      You may charge any price or no price for each copy that you convey,
+    and you may offer support or warranty protection for a fee.
+
+      5. Conveying Modified Source Versions.
+
+      You may convey a work based on the Program, or the modifications to
+    produce it from the Program, in the form of source code under the
+    terms of section 4, provided that you also meet all of these conditions:
+
+        a) The work must carry prominent notices stating that you modified
+        it, and giving a relevant date.
+
+        b) The work must carry prominent notices stating that it is
+        released under this License and any conditions added under section
+        7.  This requirement modifies the requirement in section 4 to
+        "keep intact all notices".
+
+        c) You must license the entire work, as a whole, under this
+        License to anyone who comes into possession of a copy.  This
+        License will therefore apply, along with any applicable section 7
+        additional terms, to the whole of the work, and all its parts,
+        regardless of how they are packaged.  This License gives no
+        permission to license the work in any other way, but it does not
+        invalidate such permission if you have separately received it.
+
+        d) If the work has interactive user interfaces, each must display
+        Appropriate Legal Notices; however, if the Program has interactive
+        interfaces that do not display Appropriate Legal Notices, your
+        work need not make them do so.
+
+      A compilation of a covered work with other separate and independent
+    works, which are not by their nature extensions of the covered work,
+    and which are not combined with it such as to form a larger program,
+    in or on a volume of a storage or distribution medium, is called an
+    "aggregate" if the compilation and its resulting copyright are not
+    used to limit the access or legal rights of the compilation's users
+    beyond what the individual works permit.  Inclusion of a covered work
+    in an aggregate does not cause this License to apply to the other
+    parts of the aggregate.
+
+      6. Conveying Non-Source Forms.
+
+      You may convey a covered work in object code form under the terms
+    of sections 4 and 5, provided that you also convey the
+    machine-readable Corresponding Source under the terms of this License,
+    in one of these ways:
+
+        a) Convey the object code in, or embodied in, a physical product
+        (including a physical distribution medium), accompanied by the
+        Corresponding Source fixed on a durable physical medium
+        customarily used for software interchange.
+
+        b) Convey the object code in, or embodied in, a physical product
+        (including a physical distribution medium), accompanied by a
+        written offer, valid for at least three years and valid for as
+        long as you offer spare parts or customer support for that product
+        model, to give anyone who possesses the object code either (1) a
+        copy of the Corresponding Source for all the software in the
+        product that is covered by this License, on a durable physical
+        medium customarily used for software interchange, for a price no
+        more than your reasonable cost of physically performing this
+        conveying of source, or (2) access to copy the
+        Corresponding Source from a network server at no charge.
+
+        c) Convey individual copies of the object code with a copy of the
+        written offer to provide the Corresponding Source.  This
+        alternative is allowed only occasionally and noncommercially, and
+        only if you received the object code with such an offer, in accord
+        with subsection 6b.
+
+        d) Convey the object code by offering access from a designated
+        place (gratis or for a charge), and offer equivalent access to the
+        Corresponding Source in the same way through the same place at no
+        further charge.  You need not require recipients to copy the
+        Corresponding Source along with the object code.  If the place to
+        copy the object code is a network server, the Corresponding Source
+        may be on a different server (operated by you or a third party)
+        that supports equivalent copying facilities, provided you maintain
+        clear directions next to the object code saying where to find the
+        Corresponding Source.  Regardless of what server hosts the
+        Corresponding Source, you remain obligated to ensure that it is
+        available for as long as needed to satisfy these requirements.
+
+        e) Convey the object code using peer-to-peer transmission, provided
+        you inform other peers where the object code and Corresponding
+        Source of the work are being offered to the general public at no
+        charge under subsection 6d.
+
+      A separable portion of the object code, whose source code is excluded
+    from the Corresponding Source as a System Library, need not be
+    included in conveying the object code work.
+
+      A "User Product" is either (1) a "consumer product", which means any
+    tangible personal property which is normally used for personal, family,
+    or household purposes, or (2) anything designed or sold for incorporation
+    into a dwelling.  In determining whether a product is a consumer product,
+    doubtful cases shall be resolved in favor of coverage.  For a particular
+    product received by a particular user, "normally used" refers to a
+    typical or common use of that class of product, regardless of the status
+    of the particular user or of the way in which the particular user
+    actually uses, or expects or is expected to use, the product.  A product
+    is a consumer product regardless of whether the product has substantial
+    commercial, industrial or non-consumer uses, unless such uses represent
+    the only significant mode of use of the product.
+
+      "Installation Information" for a User Product means any methods,
+    procedures, authorization keys, or other information required to install
+    and execute modified versions of a covered work in that User Product from
+    a modified version of its Corresponding Source.  The information must
+    suffice to ensure that the continued functioning of the modified object
+    code is in no case prevented or interfered with solely because
+    modification has been made.
+
+      If you convey an object code work under this section in, or with, or
+    specifically for use in, a User Product, and the conveying occurs as
+    part of a transaction in which the right of possession and use of the
+    User Product is transferred to the recipient in perpetuity or for a
+    fixed term (regardless of how the transaction is characterized), the
+    Corresponding Source conveyed under this section must be accompanied
+    by the Installation Information.  But this requirement does not apply
+    if neither you nor any third party retains the ability to install
+    modified object code on the User Product (for example, the work has
+    been installed in ROM).
+
+      The requirement to provide Installation Information does not include a
+    requirement to continue to provide support service, warranty, or updates
+    for a work that has been modified or installed by the recipient, or for
+    the User Product in which it has been modified or installed.  Access to a
+    network may be denied when the modification itself materially and
+    adversely affects the operation of the network or violates the rules and
+    protocols for communication across the network.
+
+      Corresponding Source conveyed, and Installation Information provided,
+    in accord with this section must be in a format that is publicly
+    documented (and with an implementation available to the public in
+    source code form), and must require no special password or key for
+    unpacking, reading or copying.
+
+      7. Additional Terms.
+
+      "Additional permissions" are terms that supplement the terms of this
+    License by making exceptions from one or more of its conditions.
+    Additional permissions that are applicable to the entire Program shall
+    be treated as though they were included in this License, to the extent
+    that they are valid under applicable law.  If additional permissions
+    apply only to part of the Program, that part may be used separately
+    under those permissions, but the entire Program remains governed by
+    this License without regard to the additional permissions.
+
+      When you convey a copy of a covered work, you may at your option
+    remove any additional permissions from that copy, or from any part of
+    it.  (Additional permissions may be written to require their own
+    removal in certain cases when you modify the work.)  You may place
+    additional permissions on material, added by you to a covered work,
+    for which you have or can give appropriate copyright permission.
+
+      Notwithstanding any other provision of this License, for material you
+    add to a covered work, you may (if authorized by the copyright holders of
+    that material) supplement the terms of this License with terms:
+
+        a) Disclaiming warranty or limiting liability differently from the
+        terms of sections 15 and 16 of this License; or
+
+        b) Requiring preservation of specified reasonable legal notices or
+        author attributions in that material or in the Appropriate Legal
+        Notices displayed by works containing it; or
+
+        c) Prohibiting misrepresentation of the origin of that material, or
+        requiring that modified versions of such material be marked in
+        reasonable ways as different from the original version; or
+
+        d) Limiting the use for publicity purposes of names of licensors or
+        authors of the material; or
+
+        e) Declining to grant rights under trademark law for use of some
+        trade names, trademarks, or service marks; or
+
+        f) Requiring indemnification of licensors and authors of that
+        material by anyone who conveys the material (or modified versions of
+        it) with contractual assumptions of liability to the recipient, for
+        any liability that these contractual assumptions directly impose on
+        those licensors and authors.
+
+      All other non-permissive additional terms are considered "further
+    restrictions" within the meaning of section 10.  If the Program as you
+    received it, or any part of it, contains a notice stating that it is
+    governed by this License along with a term that is a further
+    restriction, you may remove that term.  If a license document contains
+    a further restriction but permits relicensing or conveying under this
+    License, you may add to a covered work material governed by the terms
+    of that license document, provided that the further restriction does
+    not survive such relicensing or conveying.
+
+      If you add terms to a covered work in accord with this section, you
+    must place, in the relevant source files, a statement of the
+    additional terms that apply to those files, or a notice indicating
+    where to find the applicable terms.
+
+      Additional terms, permissive or non-permissive, may be stated in the
+    form of a separately written license, or stated as exceptions;
+    the above requirements apply either way.
+
+      8. Termination.
+
+      You may not propagate or modify a covered work except as expressly
+    provided under this License.  Any attempt otherwise to propagate or
+    modify it is void, and will automatically terminate your rights under
+    this License (including any patent licenses granted under the third
+    paragraph of section 11).
+
+      However, if you cease all violation of this License, then your
+    license from a particular copyright holder is reinstated (a)
+    provisionally, unless and until the copyright holder explicitly and
+    finally terminates your license, and (b) permanently, if the copyright
+    holder fails to notify you of the violation by some reasonable means
+    prior to 60 days after the cessation.
+
+      Moreover, your license from a particular copyright holder is
+    reinstated permanently if the copyright holder notifies you of the
+    violation by some reasonable means, this is the first time you have
+    received notice of violation of this License (for any work) from that
+    copyright holder, and you cure the violation prior to 30 days after
+    your receipt of the notice.
+
+      Termination of your rights under this section does not terminate the
+    licenses of parties who have received copies or rights from you under
+    this License.  If your rights have been terminated and not permanently
+    reinstated, you do not qualify to receive new licenses for the same
+    material under section 10.
+
+      9. Acceptance Not Required for Having Copies.
+
+      You are not required to accept this License in order to receive or
+    run a copy of the Program.  Ancillary propagation of a covered work
+    occurring solely as a consequence of using peer-to-peer transmission
+    to receive a copy likewise does not require acceptance.  However,
+    nothing other than this License grants you permission to propagate or
+    modify any covered work.  These actions infringe copyright if you do
+    not accept this License.  Therefore, by modifying or propagating a
+    covered work, you indicate your acceptance of this License to do so.
+
+      10. Automatic Licensing of Downstream Recipients.
+
+      Each time you convey a covered work, the recipient automatically
+    receives a license from the original licensors, to run, modify and
+    propagate that work, subject to this License.  You are not responsible
+    for enforcing compliance by third parties with this License.
+
+      An "entity transaction" is a transaction transferring control of an
+    organization, or substantially all assets of one, or subdividing an
+    organization, or merging organizations.  If propagation of a covered
+    work results from an entity transaction, each party to that
+    transaction who receives a copy of the work also receives whatever
+    licenses to the work the party's predecessor in interest had or could
+    give under the previous paragraph, plus a right to possession of the
+    Corresponding Source of the work from the predecessor in interest, if
+    the predecessor has it or can get it with reasonable efforts.
+
+      You may not impose any further restrictions on the exercise of the
+    rights granted or affirmed under this License.  For example, you may
+    not impose a license fee, royalty, or other charge for exercise of
+    rights granted under this License, and you may not initiate litigation
+    (including a cross-claim or counterclaim in a lawsuit) alleging that
+    any patent claim is infringed by making, using, selling, offering for
+    sale, or importing the Program or any portion of it.
+
+      11. Patents.
+
+      A "contributor" is a copyright holder who authorizes use under this
+    License of the Program or a work on which the Program is based.  The
+    work thus licensed is called the contributor's "contributor version".
+
+      A contributor's "essential patent claims" are all patent claims
+    owned or controlled by the contributor, whether already acquired or
+    hereafter acquired, that would be infringed by some manner, permitted
+    by this License, of making, using, or selling its contributor version,
+    but do not include claims that would be infringed only as a
+    consequence of further modification of the contributor version.  For
+    purposes of this definition, "control" includes the right to grant
+    patent sublicenses in a manner consistent with the requirements of
+    this License.
+
+      Each contributor grants you a non-exclusive, worldwide, royalty-free
+    patent license under the contributor's essential patent claims, to
+    make, use, sell, offer for sale, import and otherwise run, modify and
+    propagate the contents of its contributor version.
+
+      In the following three paragraphs, a "patent license" is any express
+    agreement or commitment, however denominated, not to enforce a patent
+    (such as an express permission to practice a patent or covenant not to
+    sue for patent infringement).  To "grant" such a patent license to a
+    party means to make such an agreement or commitment not to enforce a
+    patent against the party.
+
+      If you convey a covered work, knowingly relying on a patent license,
+    and the Corresponding Source of the work is not available for anyone
+    to copy, free of charge and under the terms of this License, through a
+    publicly available network server or other readily accessible means,
+    then you must either (1) cause the Corresponding Source to be so
+    available, or (2) arrange to deprive yourself of the benefit of the
+    patent license for this particular work, or (3) arrange, in a manner
+    consistent with the requirements of this License, to extend the patent
+    license to downstream recipients.  "Knowingly relying" means you have
+    actual knowledge that, but for the patent license, your conveying the
+    covered work in a country, or your recipient's use of the covered work
+    in a country, would infringe one or more identifiable patents in that
+    country that you have reason to believe are valid.
+
+      If, pursuant to or in connection with a single transaction or
+    arrangement, you convey, or propagate by procuring conveyance of, a
+    covered work, and grant a patent license to some of the parties
+    receiving the covered work authorizing them to use, propagate, modify
+    or convey a specific copy of the covered work, then the patent license
+    you grant is automatically extended to all recipients of the covered
+    work and works based on it.
+
+      A patent license is "discriminatory" if it does not include within
+    the scope of its coverage, prohibits the exercise of, or is
+    conditioned on the non-exercise of one or more of the rights that are
+    specifically granted under this License.  You may not convey a covered
+    work if you are a party to an arrangement with a third party that is
+    in the business of distributing software, under which you make payment
+    to the third party based on the extent of your activity of conveying
+    the work, and under which the third party grants, to any of the
+    parties who would receive the covered work from you, a discriminatory
+    patent license (a) in connection with copies of the covered work
+    conveyed by you (or copies made from those copies), or (b) primarily
+    for and in connection with specific products or compilations that
+    contain the covered work, unless you entered into that arrangement,
+    or that patent license was granted, prior to 28 March 2007.
+
+      Nothing in this License shall be construed as excluding or limiting
+    any implied license or other defenses to infringement that may
+    otherwise be available to you under applicable patent law.
+
+      12. No Surrender of Others' Freedom.
+
+      If conditions are imposed on you (whether by court order, agreement or
+    otherwise) that contradict the conditions of this License, they do not
+    excuse you from the conditions of this License.  If you cannot convey a
+    covered work so as to satisfy simultaneously your obligations under this
+    License and any other pertinent obligations, then as a consequence you may
+    not convey it at all.  For example, if you agree to terms that obligate you
+    to collect a royalty for further conveying from those to whom you convey
+    the Program, the only way you could satisfy both those terms and this
+    License would be to refrain entirely from conveying the Program.
+
+      13. Remote Network Interaction; Use with the GNU General Public License.
+
+      Notwithstanding any other provision of this License, if you modify the
+    Program, your modified version must prominently offer all users
+    interacting with it remotely through a computer network (if your version
+    supports such interaction) an opportunity to receive the Corresponding
+    Source of your version by providing access to the Corresponding Source
+    from a network server at no charge, through some standard or customary
+    means of facilitating copying of software.  This Corresponding Source
+    shall include the Corresponding Source for any work covered by version 3
+    of the GNU General Public License that is incorporated pursuant to the
+    following paragraph.
+
+      Notwithstanding any other provision of this License, you have
+    permission to link or combine any covered work with a work licensed
+    under version 3 of the GNU General Public License into a single
+    combined work, and to convey the resulting work.  The terms of this
+    License will continue to apply to the part which is the covered work,
+    but the work with which it is combined will remain governed by version
+    3 of the GNU General Public License.
+
+      14. Revised Versions of this License.
+
+      The Free Software Foundation may publish revised and/or new versions of
+    the GNU Affero General Public License from time to time.  Such new versions
+    will be similar in spirit to the present version, but may differ in detail to
+    address new problems or concerns.
+
+      Each version is given a distinguishing version number.  If the
+    Program specifies that a certain numbered version of the GNU Affero General
+    Public License "or any later version" applies to it, you have the
+    option of following the terms and conditions either of that numbered
+    version or of any later version published by the Free Software
+    Foundation.  If the Program does not specify a version number of the
+    GNU Affero General Public License, you may choose any version ever published
+    by the Free Software Foundation.
+
+      If the Program specifies that a proxy can decide which future
+    versions of the GNU Affero General Public License can be used, that proxy's
+    public statement of acceptance of a version permanently authorizes you
+    to choose that version for the Program.
+
+      Later license versions may give you additional or different
+    permissions.  However, no additional obligations are imposed on any
+    author or copyright holder as a result of your choosing to follow a
+    later version.
+
+      15. Disclaimer of Warranty.
+
+      THERE IS NO WARRANTY FOR THE PROGRAM, TO THE EXTENT PERMITTED BY
+    APPLICABLE LAW.  EXCEPT WHEN OTHERWISE STATED IN WRITING THE COPYRIGHT
+    HOLDERS AND/OR OTHER PARTIES PROVIDE THE PROGRAM "AS IS" WITHOUT WARRANTY
+    OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO,
+    THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+    PURPOSE.  THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE PROGRAM
+    IS WITH YOU.  SHOULD THE PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF
+    ALL NECESSARY SERVICING, REPAIR OR CORRECTION.
+
+      16. Limitation of Liability.
+
+      IN NO EVENT UNLESS REQUIRED BY APPLICABLE LAW OR AGREED TO IN WRITING
+    WILL ANY COPYRIGHT HOLDER, OR ANY OTHER PARTY WHO MODIFIES AND/OR CONVEYS
+    THE PROGRAM AS PERMITTED ABOVE, BE LIABLE TO YOU FOR DAMAGES, INCLUDING ANY
+    GENERAL, SPECIAL, INCIDENTAL OR CONSEQUENTIAL DAMAGES ARISING OUT OF THE
+    USE OR INABILITY TO USE THE PROGRAM (INCLUDING BUT NOT LIMITED TO LOSS OF
+    DATA OR DATA BEING RENDERED INACCURATE OR LOSSES SUSTAINED BY YOU OR THIRD
+    PARTIES OR A FAILURE OF THE PROGRAM TO OPERATE WITH ANY OTHER PROGRAMS),
+    EVEN IF SUCH HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE POSSIBILITY OF
+    SUCH DAMAGES.
+
+      17. Interpretation of Sections 15 and 16.
+
+      If the disclaimer of warranty and limitation of liability provided
+    above cannot be given local legal effect according to their terms,
+    reviewing courts shall apply local law that most closely approximates
+    an absolute waiver of all civil liability in connection with the
+    Program, unless a warranty or assumption of liability accompanies a
+    copy of the Program in return for a fee.
+
+                         END OF TERMS AND CONDITIONS
+
+                How to Apply These Terms to Your New Programs
+
+      If you develop a new program, and you want it to be of the greatest
+    possible use to the public, the best way to achieve this is to make it
+    free software which everyone can redistribute and change under these terms.
+
+      To do so, attach the following notices to the program.  It is safest
+    to attach them to the start of each source file to most effectively
+    state the exclusion of warranty; and each file should have at least
+    the "copyright" line and a pointer to where the full notice is found.
+
+        <one line to give the program's name and a brief idea of what it does.>
+        Copyright (C) <year>  <name of author>
+
+        This program is free software: you can redistribute it and/or modify
+        it under the terms of the GNU Affero General Public License as published by
+        the Free Software Foundation, either version 3 of the License, or
+        (at your option) any later version.
+
+        This program is distributed in the hope that it will be useful,
+        but WITHOUT ANY WARRANTY; without even the implied warranty of
+        MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+        GNU Affero General Public License for more details.
+
+        You should have received a copy of the GNU Affero General Public License
+        along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+    Also add information on how to contact you by electronic and paper mail.
+
+      If your software can interact with users remotely through a computer
+    network, you should also make sure that it provides a way for users to
+    get its source.  For example, if your program is a web application, its
+    interface could display a "Source" link that leads users to an archive
+    of the code.  There are many ways you could offer source, and different
+    solutions will be better for different programs; see section 13 for the
+    specific requirements.
+
+      You should also get your employer (if you work as a programmer) or school,
+    if any, to sign a 'copyright disclaimer' for the program, if necessary.
+    For more information on this, and how to apply and follow the GNU AGPL, see
+    <https://www.gnu.org/licenses/>.
+
+    DISCLAIMER OF LIABILITY:
+
+    THIS SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+    INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
+    IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE FOR ANY CLAIM,
+    DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE,
+    ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+    BY USING THIS SOFTWARE, THE USER AGREES THAT THE AUTHOR SHALL HAVE NO LIABILITY FOR ANY CONSEQUENCES ARISING FROM ITS USE."""
+
+# -------------------------------------------------------------------------
+# MAIN FUNCTION
+# -------------------------------------------------------------------------
+def about():
+    # Creazione Finestra (Toplevel)
+    about_window = ctk.CTkToplevel()
+    about_window.title("Help & About - INUE v1.1 άλφα")
     
-    # Colori hover per gli switch
-    switch_colors = ('#00cc66', '#0066FF', '#FF4F00', '#8000FF')
-
-    def switch_callback(title, switch, true, false):
-        current_value = switch.get()
-        print(f"Switch state for '{title}': {switch.get()}")
-        update_switcher_value(title, current_value)
-
-    # ---------------------------------------------------------
-    # 1. TOP FRAME (Header Ribbon: Logo SX, Switch DX)
-    # ---------------------------------------------------------
-    top_frame = ctk.CTkFrame(root, fg_color=panel_color)
-    top_frame.pack(side="top", padx=0, pady=5, fill="x", expand=False)
-
-    # A. LOGO (Sinistra) - SMART RESIZING
+    # Impostazioni finestra
+    w, h = 1000, 800 # Un po' più larga per i 4 pannelli
+    screen_w = about_window.winfo_screenwidth()
+    screen_h = about_window.winfo_screenheight()
+    x = (screen_w/2) - (w/2)
+    y = (screen_h/2) - (h/2)
+    about_window.geometry(f"{int(w)}x{int(h)}+{int(x)}+{int(y)}")
+    
     try:
-        logo_path = resource_path("inue.png")  
-        pil_image = Image.open(logo_path)
-        
-        # --- CALCOLO PROPORZIONI ---
-        desired_height = 120
-        aspect_ratio = pil_image.width / pil_image.height
-        desired_width = int(desired_height * aspect_ratio)
-        
-        # Creiamo l'immagine CTk
-        logo = ctk.CTkImage(light_image=pil_image, size=(desired_width, desired_height))
-        
-        logo_label = ctk.CTkLabel(top_frame, image=logo, text="", fg_color="transparent")
-        logo_label.pack(side="left", padx=20, pady=5)
-    except Exception as e:
-        print(f"Errore caricamento logo: {e}")
-        ctk.CTkLabel(top_frame, text="INUE", font=font_header).pack(side="left", padx=20)
+        if parameters["sistema"] == 2:
+            about_window.iconbitmap(resource_path("inue_YQZ_icon.ico"))
+        elif parameters["sistema"] == 1:
+            from PIL import ImageTk
+            icon_img = ImageTk.PhotoImage(Image.open(resource_path("inue256.png")))
+            about_window.iconphoto(True, icon_img)
+    except:
+        pass
 
-    # Function to enable window dragging
-    def start_drag(event):
-        global offset_x, offset_y
-        offset_x = event.x
-        offset_y = event.y
+    # Colori
+    panel_bg = "#ECEFF1"
+    about_window.configure(fg_color=panel_bg)
 
-    def do_drag(event):
-        x = root.winfo_x() - offset_x + event.x
-        y = root.winfo_y() - offset_y + event.y
-        root.geometry(f"+{x}+{y}")
+    # Configurazione Griglia: 2 Righe x 2 Colonne (4 Quadranti uguali)
+    about_window.grid_columnconfigure(0, weight=1, uniform="group1") # uniform fa sì che siano larghe uguali
+    about_window.grid_columnconfigure(1, weight=1, uniform="group1")
+    about_window.grid_rowconfigure(0, weight=1)    # Top
+    about_window.grid_rowconfigure(1, weight=1)    # Bottom
 
-    # Bindings per il drag
-    top_frame.bind("<Button-1>", start_drag)
-    top_frame.bind("<B1-Motion>", do_drag)
+    # Font
+    font_title = ("Open Sans", 16, "bold")
+    font_body = ("Open Sans", 12)
+    font_mono = ("Consolas", 10)
+
+    # =========================================================================
+    # 1. QUADRANTE TOP-SX: LOGO & INFO
+    # =========================================================================
+    frame_info = ctk.CTkFrame(about_window, fg_color="transparent")
+    frame_info.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
+
+    # Logo
     try:
-        logo_label.bind("<Button-1>", start_drag)
-        logo_label.bind("<B1-Motion>", do_drag)
-    except: pass
+        img_path = resource_path("inue.png")
+        pil_img = Image.open(img_path)
+        h_logo = 100
+        w_logo = int(h_logo * (pil_img.width / pil_img.height))
+        logo_img = ctk.CTkImage(light_image=pil_img, size=(w_logo, h_logo))
+        lbl_logo = ctk.CTkLabel(frame_info, image=logo_img, text="")
+        lbl_logo.pack(pady=(10, 5))
+    except Exception:
+        ctk.CTkLabel(frame_info, text="INUE LOGO", font=font_title).pack(pady=20)
 
-    # B. SWITCHER CONTAINER (Destra)
-    switcher_frame = ctk.CTkFrame(top_frame, fg_color="transparent")
-    switcher_frame.pack(side="right", padx=20, pady=5)
+    # Titolo
+    ctk.CTkLabel(frame_info, text="INUE v. 1.1", font=("Open Sans", 24, "bold"), text_color="black").pack()
+    ctk.CTkLabel(frame_info, text="Powered by SUBSTR8", font=("Open Sans", 12, "italic"), text_color="#00695C").pack(pady=(0, 10))
 
-    # Generazione Switcher (Orizzontale)
-    for i, config in enumerate(switcher_config):
-        single_switch_box = ctk.CTkFrame(switcher_frame, fg_color="transparent")
-        single_switch_box.pack(side="left", padx=10) 
-        
-        ctk.CTkLabel(single_switch_box, text=config["title"], font=("Open Sans", 12, "bold"), text_color="#555555").pack(side="top", pady=(0,2))
-        
-        ctrl_row = ctk.CTkFrame(single_switch_box, fg_color="transparent")
-        ctrl_row.pack(side="top")
-        
-        ctk.CTkLabel(ctrl_row, text=config["sx_label"], font=("Open Sans", 10)).pack(side="left", padx=5)
-        
-        switcher = ctk.CTkSwitch(
-            ctrl_row,
-            text="",
-            onvalue=config["true"], 
-            offvalue=config["false"], 
-            switch_width=24,
-            switch_height=14,
-            border_width=3,
-            fg_color='grey',
-            progress_color='grey',
-            button_color='#003366', 
-            button_hover_color=switch_colors[i],
-            width=30,
-            height=20
-        )
-        switcher.pack(side="left", padx=0)
-        switcher.configure(command=partial(switch_callback, title=config["title"], switch=switcher, true=config["true"], false=config["false"]))
-        
-        ctk.CTkLabel(ctrl_row, text=config["dx_label"], font=("Open Sans", 10)).pack(side="left", padx=5)
+    # Info Testo
+    ctk.CTkLabel(frame_info, text=INFO_TEXT, font=font_body, text_color="black", justify="center").pack(padx=10, pady=5)
 
+    # =========================================================================
+    # 2. QUADRANTE TOP-DX: QUICK HELP
+    # =========================================================================
+    frame_help = ctk.CTkFrame(about_window, fg_color="white", corner_radius=10, border_width=1, border_color="#CFD8DC")
+    frame_help.grid(row=0, column=1, padx=10, pady=10, sticky="nsew")
 
-    top_frame.grid_columnconfigure(0, weight=1, minsize=200)  
-    top_frame.grid_columnconfigure(1, weight=0)  
-
-    #______________________________Definition of a Saving Folder____________________________________________
-    def select_outdir():
-        outpath = filedialog.askdirectory(title="Select the Processed Files Directory")
-        parameters['out_fold'] = outpath
-        if outpath: 
-            print(f"Selected directory:", parameters['out_fold'])
-            global output_folder
-            output_folder = parameters['out_fold']
-
-    #_______________________________UI refresh (AUTOMATION)_________________________________________________
-    # Dizionario per memorizzare i widget dei bottoni target
-    monitored_buttons = {}
+    ctk.CTkLabel(frame_help, text="QUICK HELP & WARNINGS", font=font_title, text_color="#003366").pack(pady=(10, 5))
     
-    # AGGIUNTO DEMROAD ALLA LISTA
-    TARGET_KEYS = ["normalized_IC", "dNBR", "DISCONNECTING_INDEX", "VRf", "DEMROAD"]
+    txt_help = ctk.CTkTextbox(frame_help, font=font_body, fg_color="transparent", text_color="#333333", wrap="word")
+    txt_help.insert("0.0", QUICK_HELP_TEXT)
+    txt_help.configure(state="disabled")
+    txt_help.pack(fill="both", expand=True, padx=15, pady=10)
 
-    def annoadore(window):
-        annoa()
-        window.after(1000, lambda: annoadore(window))
+    # =========================================================================
+    # 3. QUADRANTE BOTTOM-SX: BIBLIOGRAFIA
+    # =========================================================================
+    frame_biblio = ctk.CTkFrame(about_window, fg_color="white", corner_radius=10, border_width=1, border_color="#CFD8DC")
+    frame_biblio.grid(row=1, column=0, padx=10, pady=10, sticky="nsew")
 
-    def annoa():
-        # DEFINIZIONE PALETTE
-        # Palette ROSSA (Fire/Emergency)
-        RED_READY = "#C62828"   
-        RED_WAIT = "#EF5350"
-        
-        # Palette VIOLA (IC/Geomorphology) - per DEMROAD
-        PURPLE_READY = "#512DA8"
-        PURPLE_WAIT = "#9575CD"
-        
-        for key in TARGET_KEYS:
-            if key in monitored_buttons:
-                button = monitored_buttons[key]
-                path = assetios.input_tiff.get(key) or assetios.output_tiff.get(key)
-                
-                # SELEZIONE COLORE IN BASE AL TIPO DI BOTTONE
-                if key == "DEMROAD":
-                    ready_col = PURPLE_READY
-                    wait_col = PURPLE_WAIT
-                else:
-                    ready_col = RED_READY
-                    wait_col = RED_WAIT
+    ctk.CTkLabel(frame_biblio, text="BIBLIOGRAPHY", font=font_title, text_color="#E65100").pack(pady=(10, 5))
 
-                # APPLICAZIONE STATO
-                if path is not None:
-                    button.configure(fg_color=ready_col)
-                else:
-                    button.configure(fg_color=wait_col)
+    txt_biblio = ctk.CTkTextbox(frame_biblio, font=("Segoe UI", 11), fg_color="transparent", text_color="#333333", wrap="word")
+    txt_biblio.insert("0.0", BIBLIOGRAPHY_TEXT)
+    txt_biblio.configure(state="disabled")
+    txt_biblio.pack(fill="both", expand=True, padx=15, pady=10)
 
-    # ________________________FILE SELECTOR____________________________________________________
+    # =========================================================================
+    # 4. QUADRANTE BOTTOM-DX: LICENZA
+    # =========================================================================
+    frame_license = ctk.CTkFrame(about_window, fg_color="white", corner_radius=10, border_width=1, border_color="#CFD8DC")
+    frame_license.grid(row=1, column=1, padx=10, pady=10, sticky="nsew")
 
-    def browse(btn_instance, label, ext, f_type, dark_color, dict_key):
-        
-        # Gestione Funzioni speciali
-        if "Select the" in label and "Directory" in label and ext == "function":
-            select_outdir()
-            if parameters.get('out_fold'):
-                btn_instance.configure(fg_color=dark_color)
-            return
-            
-        elif label == "Preliminary\nOperations" and ext == "function":
-            manager.file_manager()
-            return
+    ctk.CTkLabel(frame_license, text="LICENSE AGREEMENT", font=font_title, text_color="#455A64").pack(pady=(10, 5))
 
-        elif label == "Help\n&\nAbout" and ext == "function":
-             about.about()
-             return
+    txt_license = ctk.CTkTextbox(frame_license, font=font_mono, fg_color="transparent", text_color="#333333", wrap="word")
+    txt_license.insert("0.0", LICENSE_TEXT)
+    txt_license.configure(state="disabled")
+    txt_license.pack(fill="both", expand=True, padx=15, pady=10)
 
-        # Gestione selezione File
-        if ext != "function":
-            filetypes = (("All files", "*.*"), (f"{f_type} Files", f"*{f_type}"))
-            var_name = label.replace("Select\n", "").replace(" ", "_").replace("\n", "_")
-            
-            filename = filedialog.askopenfilename(
-                title=f"Select {var_name} File",
-                initialdir="/",
-                filetypes=filetypes
-            )
+    # Porta in primo piano
+    about_window.lift()
+    about_window.focus_force()
 
-            print(f"Selected {label}: {filename}")
-
-            if filename: 
-                # 1. Aggiorna Grafica (colore immediato al click)
-                btn_instance.configure(fg_color=dark_color)
-                
-                # 2. Normalizza percorso
-                filename = os.path.normpath(filename)
-                
-                # 3. Logica di business
-                match var_name:
-                    case "DEM":
-                        print(var_name, filename, ext)
-                        manager.update_assetios(var_name, filename, ext, 'input')
-                        DEM = input_tiff["DEM"]
-                        if DEM: parameters["trs_csi"] = manager.open_array(DEM)[2]
-                    case "PREFIRE_NIR":
-                        print(var_name, filename, ext)
-                        manager.update_assetios(var_name, filename, ext, 'input')
-                        b12l2a = input_tiff["PREFIRE_NIR"]
-                        if b12l2a: parameters["trs_l2a"] = manager.open_array(b12l2a)[2]
-                    case "Red_NDVI_Thresholder":
-                        print(var_name, filename, ext)
-                        manager.update_assetios(var_name, filename, ext, 'input')
-                        nb4 = input_tiff["Red_NDVI_Thresholder"] 
-                        if nb4: parameters["trs_arb"] = manager.open_array(nb4)[2]
-                    case "normalized_IC":
-                        manager.update_assetios('normalized_IC', filename, 'tiff', 'output')
-                        dsm = output_tiff["normalized_IC"]
-                        if dsm: parameters["trs_csi"] = manager.open_array(dsm)[2]
-                    case "dNBR":
-                        manager.update_assetios('dNBR', filename, 'tiff', 'output')
-                        dNBR = output_tiff["dNBR"]
-                        if dNBR: parameters["trs_l2a"] = manager.open_array(dNBR)[2]
-                    case "Vegetation_Recovery_Factor":
-                        manager.update_assetios("VRf", filename, 'tiff', 'output')
-                        nb4 = output_tiff["VRf"]
-                        if nb4: parameters["trs_arb"] = manager.open_array(nb4)[2]
-                    case "Custom_W":
-                        manager.update_assetios("W_Index", filename, 'tiff', 'output')
-                    case "Custom_Variable":
-                        manager.update_assetios("Custom_Variable", filename, 'tiff', 'input')
-                    case "DISCONNECTING_INDEX_shapefile":
-                        manager.update_assetios('DISCSHAPE', filename, 'shp', 'input')
-                    case "DISCONNECTING_INDEX_raster":
-                        manager.update_assetios('DISCONNECTING_INDEX', filename, 'tiff', 'input')
-                    case "PFES":
-                        print(var_name, filename, ext)
-                        manager.update_assetios(var_name, filename, ext, 'output')
-                        pfestif = output_tiff["PFES"]
-                        if pfestif: parameters["trs_pfes"] = manager.open_array(pfestif)[2]
-                    case "Output_Directory":
-                        select_outdir()
-                    case _:
-                        print(var_name, filename, ext)
-                        manager.update_assetios(var_name, filename, ext, 'input')
-
-                print(f"Raw file path for {label}: {filename}")
-                              
-    # ---------------------------------------------------------
-    # 2. MAIN LAYOUT (Left & Right Frames)
-    # ---------------------------------------------------------
-    
-    color_themes = {
-        "setup":    ("#A0A0A0", "#404040"), 
-        "IC":       ("#9575CD", "#512DA8"), 
-        "BA":       ("#FFA726", "#E65100"), 
-        "gDI":      ("#42A5F5", "#0D47A1"), 
-        "VRF":      ("#66BB6A", "#1B5E20"), 
-        "CF":       ("#26A69A", "#00695C"), 
-        "FIREX":    ("#EF5350", "#C62828"), 
-        "default":  (button_color, "#14375e") 
-    }
-
-    # Frame canvas
-    canvas_frame = ctk.CTkFrame(root, fg_color=panel_color, border_width=0)
-    canvas_frame.pack(fill="both", expand=True, padx=0, pady=0)
-
-    canvas = ctk.CTkCanvas(canvas_frame, bg=panel_color, bd=0, highlightthickness=0)
-    canvas.pack(side="left", fill="both", expand=True)
-
-    yscrollbar = ctk.CTkScrollbar(canvas_frame, command=canvas.yview)
-    yscrollbar.pack(side="right", fill="y")
-    canvas.configure(yscrollcommand=yscrollbar.set)
-
-    content_frame = ctk.CTkFrame(canvas, fg_color="transparent")
-    canvas.create_window((0, 0), window=content_frame, anchor="nw")
-
-    def update_scrollregion(event=None):
-        canvas.configure(scrollregion=canvas.bbox("all"))
-
-    content_frame.bind("<Configure>", update_scrollregion)
-
-    # ---------------------------------------------------------
-    # 3. LEFT FRAME (Smart Buttons)
-    # ---------------------------------------------------------
-    left_frame = ctk.CTkFrame(content_frame, fg_color=panel_color)
-    left_frame.pack(side="left", padx=10, pady=10, fill="both", expand=False)
-
-    # Manteniamo la tua mappatura personalizzata
-    left_buttons_text = [
-        ("Preliminary\nOperations", "function", "file_manager", "setup", None),
-        ("Select the\nProcessed Files\nDirectory", "function", "select_outdir", "setup", "out_fold"),
-        ("Select\nDEM", "tiff", ".tif", "IC", "DEM"),
-        ("Select\nSTUDY AREA", "shp", "shp", "IC", "STUDY_AREA"),
-        ("Select\nROADS", "shp", "shp", "IC", "ROADS"),
-        ("Select\nDEMROAD", "tiff", "tiff", "IC", "DEMROAD"),
-        ("Select\nCustom W", "tiff", ".tif", "IC", "W_Index"),
-        ("Select\nDISCONNECTING\nINDEX\nshapefile", "shp", "shp", "gDI", "DISCSHAPE"),
-        ("Select\nPREFIRE\nNIR", "JPEG 2000", ".jp2", "BA", "PREFIRE_NIR"), 
-        ("Select\nPREFIRE\nSWIR","JPEG 2000", ".jp2", "BA", "PREFIRE_SWIR"), 
-        ("Select\nPOSTFIRE\nNIR", "JPEG 2000", ".jp2", "BA", "POSTFIRE_NIR"), 
-        ("Select\nPOSTFIRE\nSWIR", "JPEG 2000", ".jp2", "BA", "POSTFIRE_SWIR"),
-        ("Select\nRed NDVI\nThresholder", "JPEG 2000", ".jp2", "VRF", "Red_NDVI_Thresholder"), 
-        ("Select\nNIR NDVI\nThresholder", "JPEG 2000", ".jp2", "VRF", "NIR_NDVI_Thresholder"),
-        ("Select\nCustom\nVariable", "tiff", ".tif", "CF", "Custom_Variable"),
-        ("Select\nnormalized IC", "tiff", ".tif", "FIREX", "normalized_IC"),
-        ("Select\ndNBR", "tiff", ".tif", "FIREX", "dNBR"),
-        ("Select\nDISCONNECTING\nINDEX raster", "tiff", ".tif", "FIREX", "DISCONNECTING_INDEX"),
-        ("Select\nVegetation\nRecovery\nFactor", 'tiff', '.tiff', "FIREX", "VRf"),  
-        ("Help\n&\nAbout", "function", "about", "default", None)
-    ]
-
-    def create_smart_button(index, button_data):
-        text, ext, f_type, theme_key, dict_key = button_data
-        row = index // 5
-        col = index % 5
-        
-        # 1. Recupera colori
-        light_c, dark_c = color_themes.get(theme_key, color_themes["default"])
-        
-        # 2. Logica STATO INIZIALE
-        start_color = light_c
-        try:
-            is_loaded = False
-            if dict_key:
-                if dict_key in input_tiff and input_tiff[dict_key]: is_loaded = True
-                elif dict_key in output_tiff and output_tiff[dict_key]: is_loaded = True
-                elif dict_key in input_shp and input_shp[dict_key]: is_loaded = True
-                elif dict_key in parameters and parameters[dict_key]: is_loaded = True
-            
-            if is_loaded:
-                start_color = dark_c
-        except Exception as e:
-            pass 
-
-        button = ctk.CTkButton(
-            left_frame,
-            text=text,
-            font=font_style,
-            width=100,
-            height=100,
-            fg_color=start_color 
-        )
-        
-        button.configure(command=lambda: browse(button, text, ext, f_type, dark_c, dict_key))
-        button.grid(row=row, column=col, columnspan=1, padx=10, pady=10, sticky="nsew")
-
-        # --- MONITORAGGIO ---
-        # Se la chiave del bottone è nella lista target, salviamo il riferimento
-        if dict_key in TARGET_KEYS:
-            monitored_buttons[dict_key] = button
-
-    for i, data in enumerate(left_buttons_text):
-        create_smart_button(i, data)
-
-    # Configurazione Griglia Left
-    for i in range(5): 
-        left_frame.grid_columnconfigure(i, weight=1, minsize=120)
-    num_rows = (len(left_buttons_text) // 5) + 1
-    for i in range(num_rows):
-        left_frame.grid_rowconfigure(i, weight=1,minsize=120)
-
-
-    # ---------------------------------------------------------
-    # 4. RIGHT FRAME (Bilanciato e Coerente con Left)
-    # ---------------------------------------------------------
-    right_frame = ctk.CTkFrame(content_frame, fg_color=panel_color)
-    right_frame.pack(side="right", padx=10, pady=10, fill="x", expand=False, anchor="n")
-
-    c_blue   = color_themes["gDI"][1] 
-    c_purple = color_themes["IC"][1] 
-    c_teal   = color_themes["CF"][1] 
-    c_orange = color_themes["BA"][1] 
-    c_green  = color_themes["VRF"][1] 
-    c_red    = color_themes["FIREX"][1] 
-
-    def buttfunction(label, funtzione):
-        # Funzione interna che esegue i calcoli (il "lavoro sporco")
-        if label == "DEMROAD Crafter" and funtzione == "funtz": 
-            roadmask.roadmask()
-        elif label == "Sediment Connectivity\n Calculator" and funtzione == "funtz":
-            csi.aberi_ic()
-        elif label == "Burnt Area\nAnalyzer" and funtzione == "funtz":
-            burntareanalyzer.fogu()
-        elif label == "Sediment\nDisconnector" and funtzione == "funtz":
-            disc.disconnector()
-        elif label == "NDVI\nThresholder" and funtzione == "funtz":
-            ndvithresholder.arbures()
-        elif label == "Custom Variables\nApplier" and funtzione == "funtz":
-            customvariable.scc()
-        elif label == "Postfire Erosion Susceptibility Map Crafter" and funtzione == "funtz":
-            PFES.pfes()
-
-            
-    right_buttons_text = [
-        ("DEMROAD Crafter", "funtz", "#512DA8"),            
-        ("Sediment Connectivity\n Calculator", "funtz", "#512DA8"), 
-        ("Sediment\nDisconnector", "funtz", "#0D47A1"),     
-        ("Burnt Area\nAnalyzer", "funtz", "#E65100"),     
-        ("NDVI\nThresholder", "funtz", "#1B5E20"),         
-        ("Custom Variables\nApplier", "funtz", "#00695C")   
-    ]
-
-    btn_height_right = 128 
-
-    for i, (textr, funtz, btn_col) in enumerate(right_buttons_text):
-        row = i // 2  
-        col = i % 2   
-        button = ctk.CTkButton(
-            right_frame,
-            text=textr,
-            font=font_style,
-            width=96,
-            height=btn_height_right, 
-            fg_color=btn_col,
-            command=lambda label=textr, funtzione=funtz: buttfunction(label, funtzione)
-        )
-        button.grid(row=row, column=col, padx=10, pady=10, sticky="nsew")
-
-    postfire_button = ctk.CTkButton(
-        right_frame,
-        text="Postfire\nErosion\nSusceptibility\nMap Crafter",
-        font=font_style,
-        width=120, 
-        height=btn_height_right, 
-        fg_color="#C62828",          
-        command=lambda label="Postfire Erosion Susceptibility Map Crafter", funtzione="funtz": buttfunction(label, funtzione)
-    )
-    
-    postfire_button.grid(row=0, column=2, rowspan=3, padx=10, pady=10, sticky="nsew")
-
-    for i in range(3): 
-        right_frame.grid_columnconfigure(i, weight=1, minsize=110)
-    
-    for i in range(3): 
-        right_frame.grid_rowconfigure(i, weight=0, minsize=btn_height_right + 20) 
-
-    def update_scroll_region(event=None):
-        canvas.config(scrollregion=canvas.bbox("all"))
-
-    content_frame.bind("<Configure>", update_scroll_region)
-
-    # AVVIA L'ANNOADORE (REFRESH AUTOMATICO)
-    annoadore(root)
-
-    root.mainloop()
-
-#_____________________________END OF THE GUI________________________________________________________________________
+if __name__ == "__main__":
+    app = ctk.CTk()
+    app.withdraw()
+    about()
+    app.mainloop()
