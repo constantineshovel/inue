@@ -1,6 +1,6 @@
 # DISCLAIMER OF LIABILITY:
 # This software is provided "as is", without any warranty.
-# This module is part of INUE - version 1.1 "άλφα"
+# This module is part of INUE - version 1.1.1 "άλφα"
 # The author is not responsible for any damages resulting from its use.
 # See the LICENSE file for more details.
 # Copyright Costantino Pala © 2025
@@ -67,14 +67,56 @@ def write_to_log(message, log_file_path):
     with open(log_file_path, "a", encoding="utf-8") as log_file:
         log_file.write(message)
 
-class LogWindow(ctk.CTk):
+def resource_path(relative_path):
+    if getattr(sys, 'frozen', False):  
+        base_path = sys._MEIPASS  
+    else:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
+class PrintRedirector:
+    def __init__(self, text_widget, log_file_path):
+        self.text_widget = text_widget
+        self.log_file_path = log_file_path  
+
+    def write(self, message):
+        self.text_widget.configure(state="normal")
+        self.text_widget.insert("end", message)
+        self.text_widget.see("end")
+        self.text_widget.configure(state="disabled")
+        write_to_log(message, self.log_file_path) 
+
+    def flush(self):
+        pass
+
+class LogFileWriter:
+    def __init__(self, log_file_path):
+        self.log_file_path = log_file_path
+
+    def write(self, message):
+        write_to_log(message, self.log_file_path)
+
+    def flush(self):
+        pass
+
+def write_to_log(message, log_file_path):
+    with open(log_file_path, "a", encoding="utf-8") as log_file:
+        log_file.write(message)
+
+class LogWindow(ctk.CTkToplevel):
     def __init__(self, title="Log", icon_path=None, log_file_path="disconnector.log"):
         self.original_stdout = sys.stdout
         super().__init__()
 
         self.title(title)
         if icon_path:
-            self.iconbitmap(icon_path)
+            if parameters["sistema"] == 2:
+                self.iconbitmap(icon_path)
+            elif parameters["sistema"] == 1:
+                import tkinter as tk
+                icon_img = tk.PhotoImage(file=resource_path("inue256.png"))
+                self.iconphoto(True, icon_img)
 
         self.geometry("800x600")
         self.resizable(True, True)
@@ -90,7 +132,6 @@ class LogWindow(ctk.CTk):
             if hasattr(self, "original_stdout"):  
                 sys.stdout = self.original_stdout  
             self.destroy()
-
 
 
 def roadmask(use_log_window=True, log_file_path=None):
@@ -117,7 +158,7 @@ def roadmask(use_log_window=True, log_file_path=None):
 
     log_window = None
     if use_log_window:
-        log_window = LogWindow(title="INUE - version 1.1 άλφα DEMROAD and ROADMASK Crafter", 
+        log_window = LogWindow(title="INUE - version 1.1.1 άλφα DEMROAD and ROADMASK Crafter", 
                                icon_path=resource_path("inue_YQZ_icon.ico"),
                                log_file_path=log_file_path)
         log_window.update()  #Keeps the window open while calculating
@@ -125,7 +166,7 @@ def roadmask(use_log_window=True, log_file_path=None):
     #Sends the print messages to the log files and to the popup
     sys.stdout = LogFileWriter(log_file_path) if not use_log_window else sys.stdout
 
-    print("====== INUE - version 1.1 άλφα - DEMROAD crafter ======")
+    print("====== INUE - version 1.1.1 άλφα - DEMROAD crafter ======")
     print(f"Session started: {datetime.datetime.now()}\n")
     log_window.update() if log_window else None
     print("This module calculates DEMROAD. DEMROAD is an input parameter for Sediment Connector. Before calculating load a shapefile containing a polygon delimitating Study Area (MASK) and a shapefile for ROADS")
