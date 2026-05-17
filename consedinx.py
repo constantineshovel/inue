@@ -383,7 +383,7 @@ def aberi_ic(use_log_window=True, log_file_path=None):
 
         log_window = None
         if use_log_window:
-            log_window = LogWindow(title="INUE - version 1.1 άλφα Sediment Connector Module", 
+            log_window = LogWindow(title="INUE - version 1.1.1 άλφα Sediment Connector Module", 
                                    icon_path=resource_path("inue_YQZ_icon.ico"),
                                    log_file_path=log_file_path)
             log_window.update()  #This expression mantains the window open while INUE and TauDEM are calculating
@@ -391,7 +391,7 @@ def aberi_ic(use_log_window=True, log_file_path=None):
         #The following expression sends the messages to the log window and file
         sys.stdout = LogFileWriter(log_file_path) if not use_log_window else sys.stdout
 
-        print("====== INUE - version 1.1 άλφα - Sediment Connector Module ======")
+        print("====== INUE - version 1.1.1 άλφα - Sediment Connector Module ======")
         print(f"Session started: {datetime.datetime.now()}\n")
         log_window.update() if log_window else None
 
